@@ -4,6 +4,18 @@ A teammate-maintainable final release of the AUB AI-Assisted Coding Task Tracker
 
 Existing functionality includes task creation, viewing, filtering, partial updates, deletion, status and priority, assignees, due dates with overdue detection, and validated tags.
 
+## Final Project
+
+This `final-project` branch is the end-of-course release. It hardens and verifies the existing Task Tracker without replacing the application's architecture or adding unrelated product features.
+
+Required final-project evidence is documented under the exact course filenames:
+
+- [`docs/release-evidence.md`](docs/release-evidence.md) — automated verification, **Manual Check**, CI/Docker evidence, and release checklist.
+- [`docs/final-ai-review.md`](docs/final-ai-review.md) — **AI Code Review Mini-Log**, **AI Security Mini-Review**, **Rejected/Corrected AI Output**, and the 3-5 sentence **Ownership Statement**.
+- [`docs/ai-playbook.md`](docs/ai-playbook.md) — the required **Three AI Usage Rules** plus the recommended AI-assisted development and verification workflow.
+
+A final validation correction also rejects an explicit `null` title during task updates. `PATCH /tasks/{id}` with `{"title": null}` now returns HTTP 422 and leaves the stored title unchanged, while omitting `title` remains valid for normal partial updates. The regression case is covered in `tests/test_tasks.py`.
+
 ## Architecture
 
 - **Backend:** FastAPI + Pydantic
@@ -26,6 +38,9 @@ task-tracker-aPP/
 │   ├── models.py
 │   └── storage.py
 ├── docs/
+│   ├── release-evidence.md
+│   ├── final-ai-review.md
+│   ├── ai-playbook.md
 │   ├── AI_ASSISTED_DEVELOPMENT.md
 │   ├── ARCHITECTURE.md
 │   ├── CODE_REVIEW.md
@@ -112,7 +127,7 @@ Serving the frontend over HTTP is preferred to double-clicking the file because 
 
 ## Important business rules
 
-- Titles are trimmed and cannot be blank.
+- Titles are trimmed and cannot be blank or explicitly set to null.
 - Status values are `ToDo`, `InProgress`, and `Done`.
 - Priority values are `Low`, `Medium`, and `High`.
 - Valid status progression is `ToDo -> InProgress -> Done`.
@@ -134,7 +149,7 @@ For a quick import check:
 python -c "from app.main import app; print(app.title, app.version)"
 ```
 
-The final release adds regression coverage for the completed-task rollback rule. See `docs/TESTING.md` for verification evidence.
+The final release includes regression coverage for completed-task rollback and explicit null-title updates. See `docs/release-evidence.md` for current verification evidence.
 
 ## Docker
 
@@ -179,11 +194,11 @@ Any failing command makes the workflow fail.
 5. Update documentation when commands, behavior, architecture, CI, Docker, or security assumptions change.
 6. Review the complete diff and git status before committing.
 
-AI coding agents should also follow `AGENTS.md`.
+AI coding agents should also follow `AGENTS.md` and `docs/ai-playbook.md`.
 
 ## Security and repository hygiene
 
-Never commit real `.env` files, credentials, API keys, tokens, private keys, customer/personal data, production logs, runtime databases, or generated caches. The repository includes hardened `.gitignore` and `.dockerignore` rules. See `docs/SECURITY_REVIEW.md`.
+Never commit real `.env` files, credentials, API keys, tokens, private keys, customer/personal data, production logs, runtime databases, or generated caches. The repository includes hardened `.gitignore` and `.dockerignore` rules. See `docs/SECURITY_REVIEW.md` and `docs/final-ai-review.md`.
 
 ## Scope and constraints
 
@@ -198,4 +213,4 @@ This is a learning project. It intentionally does not add authentication, accoun
 
 ## Engineering evidence
 
-See the `docs/` directory for architecture, testing, AI-assisted development, code review, security review, and the final evaluation study guide.
+Start with the three exact required final-project documents: `docs/release-evidence.md`, `docs/final-ai-review.md`, and `docs/ai-playbook.md`. The other documents in `docs/` provide additional architecture, testing, AI-assisted development, code review, security review, and evaluation notes.
