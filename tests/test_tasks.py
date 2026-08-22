@@ -128,6 +128,15 @@ def test_same_status_transition_returns_422(client, created_task):
     assert response.status_code == 422
 
 
+def test_done_task_cannot_move_back_to_in_progress(client, created_task):
+    task_id = created_task["id"]
+    assert client.patch(f"/tasks/{task_id}", json={"status": "InProgress"}).status_code == 200
+    assert client.patch(f"/tasks/{task_id}", json={"status": "Done"}).status_code == 200
+    response = client.patch(f"/tasks/{task_id}", json={"status": "InProgress"})
+    assert response.status_code == 422
+    assert "Invalid status transition" in response.json()["detail"]
+
+
 def test_delete_existing_task_returns_empty_204(client, created_task):
     response = client.delete(f"/tasks/{created_task['id']}")
     assert response.status_code == 204
