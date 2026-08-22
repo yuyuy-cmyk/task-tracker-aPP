@@ -8,13 +8,23 @@ venv/
 .venv/
 env/
 
-# Environment variables
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Test and coverage files
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Runtime data and logs
+*.log
+*.sqlite
+*.sqlite3
+*.db
 
 # Type-checking and linting caches
 .mypy_cache/
