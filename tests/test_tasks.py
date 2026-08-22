@@ -83,6 +83,15 @@ def test_patch_title_only_succeeds(client, created_task):
     assert response.json()["title"] == "Updated"
 
 
+def test_patch_null_title_returns_422_and_preserves_title(client, created_task):
+    task_id = created_task["id"]
+    response = client.patch(f"/tasks/{task_id}", json={"title": None})
+    assert response.status_code == 422
+    stored = client.get(f"/tasks/{task_id}")
+    assert stored.status_code == 200
+    assert stored.json()["title"] == "Test task"
+
+
 def test_patch_missing_task_returns_404(client):
     assert client.patch("/tasks/missing", json={"title": "Updated"}).status_code == 404
 
