@@ -5,7 +5,6 @@ VALID_TRANSITIONS = frozenset(
     {
         (TaskStatus.TODO, TaskStatus.IN_PROGRESS),
         (TaskStatus.IN_PROGRESS, TaskStatus.DONE),
-        (TaskStatus.DONE, TaskStatus.IN_PROGRESS),
     }
 )
 
