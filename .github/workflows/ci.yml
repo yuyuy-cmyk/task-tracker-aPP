@@ -29,3 +29,39 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -q
+
+  docker-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -t task-tracker-final .
+
+      - name: Run backend Docker container
+        run: docker run -d --name task-tracker-final -p 8000:8000 task-tracker-final
+
+      - name: Verify container health endpoint
+        run: |
+          set -e
+          for attempt in {1..20}; do
+            code=$(curl -sS -o health.json -w "%{http_code}" http://127.0.0.1:8000/health || true)
+            if [ "$code" = "200" ]; then
+              echo "HTTP status: $code"
+              cat health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Container did not return HTTP 200 from /health"
+          docker logs task-tracker-final
+          exit 1
+
+      - name: Show container state
+        if: always()
+        run: docker ps -a --filter name=task-tracker-final
+
+      - name: Stop backend Docker container
+        if: always()
+        run: docker rm -f task-tracker-final || true
