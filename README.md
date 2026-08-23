@@ -10,11 +10,11 @@ This `final-project` branch is the end-of-course release. It hardens and verifie
 
 Required final-project evidence is documented under the exact course filenames:
 
-- [`docs/release-evidence.md`](docs/release-evidence.md) — automated verification, **Manual Check**, CI/Docker evidence, and release checklist.
-- [`docs/final-ai-review.md`](docs/final-ai-review.md) — **AI Code Review Mini-Log**, **AI Security Mini-Review**, **Rejected/Corrected AI Output**, and the 3-5 sentence **Ownership Statement**.
-- [`docs/ai-playbook.md`](docs/ai-playbook.md) — the required **Three AI Usage Rules** plus the recommended AI-assisted development and verification workflow.
+- [`docs/release-evidence.md`](docs/release-evidence.md) — automated tests, **Manual Check**, actual Docker build/run `/health` evidence, CI evidence, and the release checklist.
+- [`docs/final-ai-review.md`](docs/final-ai-review.md) — **AI Code Review Mini-Log**, **AI Security Mini-Review**, **Manual security check**, **Three AI usage rules**, **AGENTS.md guardrails**, **Rejected/Corrected AI Output**, and the 3–5 sentence **Ownership Statement**.
+- [`docs/ai-playbook.md`](docs/ai-playbook.md) — **When I reach for AI first**, **When I do not reach for AI first**, **My non-negotiables**, **My review rules**, **What I am still figuring out**, and the **Decision Card**.
 
-A final validation correction also rejects an explicit `null` title during task updates. `PATCH /tasks/{id}` with `{"title": null}` now returns HTTP 422 and leaves the stored title unchanged, while omitting `title` remains valid for normal partial updates. The regression case is covered in `tests/test_tasks.py`.
+A final validation correction also rejects an explicit `null` title during task updates. `PATCH /tasks/{id}` with `{"title": null}` returns HTTP 422 and leaves the stored title unchanged, while omitting `title` remains valid for normal partial updates. The regression case is covered in `tests/test_tasks.py`.
 
 ## Architecture
 
@@ -153,7 +153,20 @@ The final release includes regression coverage for completed-task rollback and e
 
 ## Docker
 
-Build and run both services:
+### Backend image verification
+
+Build the backend image, run it, and check `/health`:
+
+```bash
+docker build -t task-tracker-final .
+docker run -d --name task-tracker-final -p 8000:8000 task-tracker-final
+curl -i http://127.0.0.1:8000/health
+docker rm -f task-tracker-final
+```
+
+This exact build/run/health-check flow has been executed successfully in a clean Ubuntu Docker runtime. The observed `/health` response was HTTP 200. See `docs/release-evidence.md` for the recorded image/container IDs and response body.
+
+### Run both services with Compose
 
 ```bash
 docker compose up --build
@@ -175,15 +188,12 @@ The backend image uses Python 3.11 slim. The frontend image uses Nginx to serve 
 
 ## CI
 
-`.github/workflows/ci.yml` runs on relevant pushes and pull requests. It:
+`.github/workflows/ci.yml` runs on relevant pushes and pull requests with two jobs:
 
-1. checks out the repository;
-2. sets up Python 3.11;
-3. installs `requirements.txt`;
-4. imports the FastAPI application;
-5. runs pytest.
+1. **test** — checks out the repository, sets up Python 3.11, installs `requirements.txt`, imports the FastAPI application, and runs the full pytest suite.
+2. **docker-verification** — builds the backend image, starts the container, polls `GET /health` until it receives HTTP 200, displays the running container, and cleans it up.
 
-Any failing command makes the workflow fail.
+Workflow run **32636518962** completed successfully with both jobs passing; the test job reported **34 passed** and the Docker job received **HTTP 200** from the running container's `/health` endpoint. Detailed evidence is in `docs/release-evidence.md`.
 
 ## Development workflow
 
@@ -198,7 +208,7 @@ AI coding agents should also follow `AGENTS.md` and `docs/ai-playbook.md`.
 
 ## Security and repository hygiene
 
-Never commit real `.env` files, credentials, API keys, tokens, private keys, customer/personal data, production logs, runtime databases, or generated caches. The repository includes hardened `.gitignore` and `.dockerignore` rules. See `docs/SECURITY_REVIEW.md` and `docs/final-ai-review.md`.
+Never commit real `.env` files, credentials, API keys, tokens, private keys, customer/personal data, production logs, runtime databases, or generated caches. The repository includes hardened `.gitignore` and `.dockerignore` rules. The required manual security check and AI security review are in `docs/final-ai-review.md`.
 
 ## Scope and constraints
 
