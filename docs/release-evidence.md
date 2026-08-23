@@ -1,14 +1,14 @@
 # Release Evidence
 
-This document records the final verification evidence for the AUB AI-Assisted Coding Task Tracker final project on the `final-project` branch.
+This document records final verification evidence for the AUB AI-Assisted Coding Task Tracker on the `final-project` branch.
 
 ## Final Release Scope
 
-The release keeps the existing FastAPI + Pydantic backend, in-memory storage, and vanilla HTML/CSS/JavaScript frontend. The final-project work focuses on maintainability, tests, CI, Docker support, documentation, security hygiene, and correcting verified defects rather than adding unrelated product features.
+The release keeps the existing FastAPI + Pydantic backend, in-memory storage, and vanilla HTML/CSS/JavaScript frontend. Final-project work focuses on maintainability, testing, CI, Docker support, documentation, security hygiene, and correction of verified defects rather than unrelated feature expansion.
 
 The final branch includes:
 
-- `README.md` with a Final Project section
+- `README.md` with a `Final Project` section
 - `AGENTS.md`
 - `.github/workflows/ci.yml`
 - `Dockerfile`, `frontend/Dockerfile`, `compose.yaml`, and `.dockerignore`
@@ -21,7 +21,7 @@ The final branch includes:
 
 The test suite covers health, create/read/list/update/delete behavior, validation failures, filters, status transitions, due dates, overdue behavior, and tags.
 
-A regression test was added for the evaluator-reported case where an explicit null title was previously accepted during a task update:
+A regression test covers the evaluator-reported case where an explicit null title was previously accepted during a task update:
 
 ```python
 def test_patch_null_title_returns_422_and_preserves_title(client, created_task):
@@ -33,24 +33,26 @@ def test_patch_null_title_returns_422_and_preserves_title(client, created_task):
     assert stored.json()["title"] == "Test task"
 ```
 
-Verification command:
+The CI test job executed:
 
 ```bash
-python -m pytest tests/test_tasks.py -q
+python -m pytest tests/ -q
 ```
 
-Observed result after the null-title fix:
+Observed result on GitHub Actions run **32636518962** (CI run **#25**, 23 August 2026):
 
 ```text
 ..................................                                       [100%]
-34 passed in 0.19s
+34 passed, 1 warning in 0.18s
 ```
 
-The fix is in `app/models.py`: when `title` is explicitly supplied as `null` in `TaskUpdate`, Pydantic now raises `Title must not be null`. Omitting `title` is still valid for partial updates.
+The warning was a Starlette/TestClient deprecation warning and did not affect the test result.
+
+The null-title fix is in `app/models.py`: when `title` is explicitly supplied as `null` in `TaskUpdate`, Pydantic raises `Title must not be null`. Omitting `title` remains valid for a normal partial update.
 
 ## Manual Check
 
-A direct API check was performed with FastAPI `TestClient` after the fix.
+A direct API check was performed with FastAPI `TestClient` after the null-title fix.
 
 Steps:
 
@@ -72,34 +74,107 @@ This confirms that an explicit null title is rejected and the stored task remain
 
 ## CI Evidence
 
-`.github/workflows/ci.yml` is configured to run on relevant pushes and pull requests. It checks out the repository, sets up Python 3.11, installs `requirements.txt`, imports the FastAPI application, and runs pytest. Any failed command causes the workflow to fail.
+`.github/workflows/ci.yml` now has two executable jobs:
 
-The CI configuration is part of the repository; this document does not claim a hosted GitHub Actions run passed unless that run is visible in GitHub Actions.
+1. `test` — sets up Python 3.11, installs dependencies, imports the FastAPI application, and runs the full pytest suite.
+2. `docker-verification` — builds the backend Docker image, starts a real container, calls `/health`, requires HTTP 200, displays the running container, and removes it afterward.
 
-## Docker Evidence
+A clean GitHub-hosted **Ubuntu 24.04** runner executed both jobs in workflow run **32636518962**. The workflow completed with conclusion **success**. Both the `test` and `docker-verification` jobs completed successfully.
 
-The repository includes:
+## Docker Build and Run Evidence
 
-- root `Dockerfile` for the FastAPI backend
-- `frontend/Dockerfile` for the static frontend
-- `compose.yaml` to run both services
-- `.dockerignore`
+Docker verification is no longer static-only. The backend image was actually built and run in a clean Docker-enabled Ubuntu environment using the same commands a developer runs locally.
 
-Expected command:
+### 1. Build the image
+
+Executed command:
 
 ```bash
-docker compose up --build
+docker build -t task-tracker-final .
 ```
 
-The configuration was reviewed for consistent ports, paths, and service roles. A Docker runtime was not available in the verification environment, so no fabricated container-run result is reported.
+Result: **success**.
+
+The build produced image:
+
+```text
+sha256:3c080df11fddd62757a0e6d47c2291ff962f7e7074a4f2d417905ef09f930923
+```
+
+### 2. Run the container
+
+Executed command:
+
+```bash
+docker run -d --name task-tracker-final -p 8000:8000 task-tracker-final
+```
+
+Result: **success**.
+
+Container ID:
+
+```text
+b64ec9a154873f05015de30ba8428570b960dfac9665024debbe21b66cc8e74f
+```
+
+### 3. Verify `/health` returns HTTP 200
+
+Executed against the running container:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+The first attempt occurred while Uvicorn was still starting; the retry succeeded. Observed result:
+
+```text
+HTTP status: 200
+{"status":"ok","timestamp":"2026-08-23T11:26:10.649952+00:00"}
+```
+
+This directly verifies the required behavior: the built image starts successfully and the running container responds to `/health` with **HTTP 200**.
+
+### 4. Confirm the container is running
+
+`docker ps` showed:
+
+```text
+IMAGE                STATUS        PORTS                                         NAMES
+task-tracker-final   Up 1 second   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   task-tracker-final
+```
+
+### 5. Cleanup
+
+Executed:
+
+```bash
+docker rm -f task-tracker-final
+```
+
+Result: **success**.
+
+### Reproducible local commands
+
+A developer with Docker installed can reproduce the same verification locally with:
+
+```bash
+docker build -t task-tracker-final .
+docker run -d --name task-tracker-final -p 8000:8000 task-tracker-final
+curl -i http://127.0.0.1:8000/health
+docker rm -f task-tracker-final
+```
 
 ## Release Checklist
 
-- Required final documentation names exist.
 - README contains a `Final Project` section.
+- Exact required documentation files exist.
+- `docs/final-ai-review.md` contains the AI code review mini-log, AI security mini-review, `Manual security check`, `Three AI usage rules`, `AGENTS.md guardrails`, `Rejected/Corrected AI Output`, and the Ownership Statement.
+- `docs/ai-playbook.md` contains `When I reach for AI first`, `When I do not reach for AI first`, `My non-negotiables`, `My review rules`, `What I am still figuring out`, and the Decision Card.
 - Null-title updates are rejected with HTTP 422.
 - Regression coverage verifies the stored title is preserved after rejection.
-- Full current test file passes: 34 tests.
+- Full CI test suite passes: **34 tests**.
+- Docker image build succeeds.
+- Docker container starts successfully.
+- The running Docker container responds to `/health` with **HTTP 200**.
 - Forward-only task status progression remains enforced.
-- CI and Docker configuration remain present.
 - No real secrets are introduced by these changes.
